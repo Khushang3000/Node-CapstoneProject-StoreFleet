@@ -10,36 +10,36 @@ const __dirname = path.dirname(__filename);         // Gets the directory name o
 // Constructs the path to uat.env, assuming it's in 'config/uat.env' relative to app.js's directory
 const configPath = path.resolve(__dirname, "config", "uat.env");
 
-console.log("------------------------------------------------------");
-console.log("Attempting to load .env file from path:", configPath);
-const loadEnvResult = dotenv.config({ path: configPath });
+// console.log("------------------------------------------------------");
+// console.log("Attempting to load .env file from path:", configPath);
+// const loadEnvResult = dotenv.config({ path: configPath });
 
-if (loadEnvResult.error) {
-  console.error("FATAL ERROR: Could not load .env file.");
-  console.error("dotenv error details:", loadEnvResult.error);
-  console.error("Please ensure the .env file exists at the specified path and is readable.");
-  // You might want to exit if the .env file is critical and not found,
-  // though db.js already exits if mongoURI is missing.
-  // process.exit(1);
-} else if (loadEnvResult.parsed && Object.keys(loadEnvResult.parsed).length === 0) {
-  console.warn("WARNING: .env file was found and loaded, but it is EMPTY or contains no valid variables.");
-  console.warn("Path checked:", configPath);
-  // This means process.env variables might not be set as expected.
-} else if (loadEnvResult.parsed) {
-  console.log("Successfully loaded .env file.");
-  console.log("Loaded environment variables:", loadEnvResult.parsed); // Optional: Uncomment to see all loaded variables
-  if (!loadEnvResult.parsed.mongoURI) {
-    console.warn("WARNING: .env file loaded, but 'mongoURI' is NOT defined within it.");
-  }
-  if (!loadEnvResult.parsed.PORT) {
-    console.warn("WARNING: .env file loaded, but 'PORT' is NOT defined within it (will use fallback).");
-  }
-} else {
-    // This case should ideally not be hit if .error is not present, but as a fallback.
-    console.warn("WARNING: dotenv.config() did not return an error, but no parsed variables were found. Check .env file content and path.");
-    console.warn("Path checked:", configPath);
-}
-console.log("------------------------------------------------------");
+// if (loadEnvResult.error) {
+//   console.error("FATAL ERROR: Could not load .env file.");
+//   console.error("dotenv error details:", loadEnvResult.error);
+//   console.error("Please ensure the .env file exists at the specified path and is readable.");
+//   // You might want to exit if the .env file is critical and not found,
+//   // though db.js already exits if mongoURI is missing.
+//   // process.exit(1);
+// } else if (loadEnvResult.parsed && Object.keys(loadEnvResult.parsed).length === 0) {
+//   console.warn("WARNING: .env file was found and loaded, but it is EMPTY or contains no valid variables.");
+//   console.warn("Path checked:", configPath);
+//   // This means process.env variables might not be set as expected.
+// } else if (loadEnvResult.parsed) {
+//   console.log("Successfully loaded .env file.");
+//   console.log("Loaded environment variables:", loadEnvResult.parsed); // Optional: Uncomment to see all loaded variables
+//   if (!loadEnvResult.parsed.mongoURI) {
+//     console.warn("WARNING: .env file loaded, but 'mongoURI' is NOT defined within it.");
+//   }
+//   if (!loadEnvResult.parsed.PORT) {
+//     console.warn("WARNING: .env file loaded, but 'PORT' is NOT defined within it (will use fallback).");
+//   }
+// } else {
+//     // This case should ideally not be hit if .error is not present, but as a fallback.
+//     console.warn("WARNING: dotenv.config() did not return an error, but no parsed variables were found. Check .env file content and path.");
+//     console.warn("Path checked:", configPath);
+// }
+// console.log("------------------------------------------------------");
 // --- END DOTENV CONFIGURATION ---
 
 import express from "express";
