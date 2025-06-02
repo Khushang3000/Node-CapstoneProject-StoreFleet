@@ -1,54 +1,65 @@
 // backend/utils/emails/welcomeMail.js
 import nodemailer from 'nodemailer';
-import path from 'path';
+import path from 'path'; // For local logo path, though your provided path is absolute
 
-// Environment variables from .env
-const mailService = process.env.SMTP_SERVICE;
-const mailUser = process.env.MAIL_USER; // sharmakhushang05@gmail.com
-const mailPass = process.env.MAIL_PASS; // YOUR_GMAIL_APP_PASSWORD_HERE
+// Read environment variables for email configuration
+const smtpService = process.env.SMTP_SERVICE;         // From .env, e.g., 'gmail'
+const mailHost = process.env.MAIL_HOST;             // From .env, e.g., 'smtp.gmail.com'
+const mailPort = parseInt(process.env.MAIL_PORT || '587', 10); // Default to 587 if not set
+const mailSecure = process.env.MAIL_SECURE === 'true'; // Expects 'true' or 'false' string in .env
+const mailUser = process.env.MAIL_USER;             // From .env, e.g., sharmakhushang05@gmail.com
+const mailPass = process.env.MAIL_PASS;             // From .env, e.g., your app password
 
-const mailHost = process.env.MAIL_HOST;
-const mailPort = parseInt(process.env.MAIL_PORT || '587', 10);
-const mailSecure = process.env.MAIL_SECURE === 'true';
-
-const mailFromAddress = process.env.MAIL_FROM_ADDRESS; // "StoreFleet Team <sharmakhushang05@gmail.com>"
-const companyName = process.env.COMPANY_NAME || 'StoreFleet';
+// For email content
+const mailFromAddress = process.env.MAIL_FROM_ADDRESS; // From .env
+const companyName = process.env.COMPANY_NAME || 'StoreFleet'; // Default if not in .env
 
 // YOUR PROVIDED LOCAL LOGO PATH
-const localLogoPath = "C:\\Users\\sharm\\Downloads\\Logo.png";
+const localLogoPath = "C:\\Users\\sharm\\Downloads\\Logo.png"; // Using double backslashes for Windows path in a string
 
 let transporter;
+let emailConfigured = false;
 
-if ((mailService && mailUser && mailPass) || (mailHost && mailUser && mailPass)) {
-    const transportOptions = mailHost
-        ? {
+// Check if either service-based or host-based config is sufficiently provided
+// Both require mailUser and mailPass
+if (mailUser && mailPass) {
+    if (smtpService) { // Prioritize service-based config if SMTP_SERVICE is provided
+        emailConfigured = true;
+        transporter = nodemailer.createTransport({
+            service: smtpService,
+            auth: { user: mailUser, pass: mailPass },
+        });
+    } else if (mailHost) { // Fallback to host-based if SMTP_SERVICE is not but MAIL_HOST is
+        emailConfigured = true;
+        transporter = nodemailer.createTransport({
             host: mailHost,
             port: mailPort,
             secure: mailSecure,
             auth: { user: mailUser, pass: mailPass },
-          }
-        : {
-            service: mailService,
-            auth: { user: mailUser, pass: mailPass },
-          };
-    transporter = nodemailer.createTransport(transportOptions);
+        });
+    }
+}
 
+if (emailConfigured) {
     transporter.verify((error) => {
         if (error) {
-            console.error('Nodemailer (Welcome Email) verification error:', error);
+            console.error('Nodemailer (Welcome Email) VERIFICATION ERROR:', error);
+            // This indicates a problem with credentials, connection to the mail server,
+            // or network configuration (like firewalls).
         } else {
-            console.log('Nodemailer (Welcome Email) is ready to send emails.');
+            console.log('Nodemailer (Welcome Email) transporter is configured and verified.');
         }
     });
 } else {
+    // This warning appears if mailUser, mailPass, OR (smtpService AND mailHost) are missing/falsy
     console.warn(
-        'Email (Welcome Email) sending is NOT fully configured. ' +
-        'Please check email-related environment variables.'
+        'Email (Welcome Email) sending is NOT fully configured. Please check SMTP_SERVICE/MAIL_HOST, MAIL_USER, and MAIL_PASS environment variables.'
     );
+    // Create a dummy transporter that logs instead of sending if not configured
     transporter = {
         sendMail: async (options) => {
-            console.warn(`Email (Welcome Email) not sent to ${options.to}. Service not configured.`);
-            return { messageId: 'dummy-id-email-not-configured' };
+            console.warn(`[DUMMY SEND] Welcome Email not truly sent to ${options.to}. Email service not configured.`);
+            return Promise.resolve({ messageId: 'dummy-id-email-not-configured' });
         }
     };
 }
@@ -105,7 +116,7 @@ export const sendWelcomeEmail = async (user) => {
                     </div>
                     <div class="email-footer">
                         <p>&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
-                        <p>${companyName} | Your Company Address | <a href="mailto:${mailUser}">Contact Us</a></p>
+                        <p>${companyName} | Your Company Address | <a href="mailto:${mailUser || 'support@example.com'}">Contact Us</a></p> {/* Fallback for mailUser in link */}
                     </div>
                 </div>
             </body>
@@ -118,10 +129,19 @@ export const sendWelcomeEmail = async (user) => {
         }]
     };
 
+    if (!emailConfigured) {
+        // The dummy transporter will log. This is just an additional explicit warning if needed.
+        // console.warn("Welcome email function called, but Nodemailer transporter is not configured. Dummy send will occur.");
+    }
+
     try {
         const info = await transporter.sendMail(mailOptions);
-        console.log(`Welcome email sent to ${userEmail}. Message ID: ${info.messageId}`);
+        // Only log success if it wasn't a dummy send
+        if (emailConfigured && info && info.messageId !== 'dummy-id-email-not-configured') {
+            console.log(`Welcome email sent to ${userEmail}. Message ID: ${info.messageId}`);
+        }
     } catch (error) {
+        // This catch will primarily be for actual send errors if 'emailConfigured' is true.
         console.error(`Error sending welcome email to ${userEmail}:`, error);
     }
 };
