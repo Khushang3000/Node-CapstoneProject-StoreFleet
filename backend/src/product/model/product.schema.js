@@ -1,33 +1,62 @@
-import { timeStamp } from "console";
 import mongoose from "mongoose";
 
-const producSchema = new mongoose.Schema(
+const reviewSchema = new mongoose.Schema({
+    user: {
+        type: mongoose.Schema.Types.ObjectId, // Corrected: Use ObjectId
+        ref: 'User', // Added ref to User model
+        required: true,
+    },
+    name: { // Name of the reviewer (denormalized from User)
+        type: String,
+        required: true,
+    },
+    rating: {
+        type: Number,
+        required: true,
+        min: 1, // Optional: Add min/max for review rating
+        max: 5, // Optional: Add min/max for review rating
+    },
+    comment: {
+        type: String,
+        trim: true,
+    },
+    createdAt: { // Timestamp for the review itself
+        type: Date,
+        default: Date.now,
+    }
+});
+
+const productSchema = new mongoose.Schema( // Corrected typo: productSchema
   {
     name: {
       type: String,
-      required: [true, "product name is required"],
+      required: [true, "Product name is required."],
       trim: true,
+      index: true, // Add index for searching by name
     },
     description: {
       type: String,
-      required: [true, "product description name is required"],
+      required: [true, "Product description is required."],
       minLength: [
         10,
-        "product description should be atleat 10 characters long",
+        "Product description should be at least 10 characters long.",
       ],
     },
     price: {
       type: Number,
-      required: [true, "product price  is required"],
-      maxLength: [8, "price can be of maximum 8 digits"],
+      required: [true, "Product price is required."],
+      min: [0, "Price cannot be negative."], // Use min/max for Numbers
+      // Consider if maxLength was intended for display purposes, not validation of numeric value
     },
-    rating: {
+    rating: { // Overall product rating
       type: Number,
       default: 0,
+      min: 0,
+      max: 5,
     },
     images: [
       {
-        public_id: {
+        public_id: { // ID from image hosting service like Cloudinary
           type: String,
           required: true,
         },
@@ -39,69 +68,42 @@ const producSchema = new mongoose.Schema(
     ],
     category: {
       type: String,
-      required: [true, "product category is required"],
-      enum: [
-        "Mobile",
-        "Electronics",
-        "Clothing",
-        "Home & Garden",
-        "Automotive",
-        "Health & Beauty",
-        "Sports & Outdoors",
-        "Toys & Games",
-        "Books & Media",
-        "Jewelry",
-        "Food & Grocery",
-        "Furniture",
-        "Shoes",
-        "Pet Supplies",
-        "Office Supplies",
-        "Baby & Kids",
-        "Art & Collectibles",
-        "Travel & Luggage",
-        "Music Instruments",
-        "Electrical Appliances",
-        "Handmade Crafts",
-      ],
+      required: [true, "Product category is required."],
+      enum: { // Enum with message for better error feedback
+        values: [
+            "Mobile", "Electronics", "Clothing", "Home & Garden", "Automotive",
+            "Health & Beauty", "Sports & Outdoors", "Toys & Games", "Books & Media",
+            "Jewelry", "Food & Grocery", "Furniture", "Shoes", "Pet Supplies",
+            "Office Supplies", "Baby & Kids", "Art & Collectibles", "Travel & Luggage",
+            "Music Instruments", "Electrical Appliances", "Handmade Crafts"
+        ],
+        message: '{VALUE} is not a supported category.'
+      },
+      index: true, // Add index for filtering by category
     },
     stock: {
       type: Number,
-      required: [true, "product stock is mandatory"],
-      maxLength: [5, "stock can be maximum 5 digits"],
+      required: [true, "Product stock is mandatory."],
+      min: [0, "Stock cannot be negative."], // Use min for Numbers
       default: 1,
     },
-    reviews: [
-      {
-        user: {
-          type: mongoose.Schema.ObjectId,
-          type: String,
-          required: true,
-        },
-        name: {
-          type: String,
-          required: true,
-        },
-        rating: {
-          type: Number,
-          required: true,
-        },
-        comment: {
-          type: String,
-        },
-      },
-    ],
+    numberOfReviews: { // Keep track of the number of reviews
+        type: Number,
+        default: 0,
+    },
+    reviews: [reviewSchema], // Embed the reviewSchema
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    createdAt: {
-      type: Date,
-      default: Date.now(),
-    },
+    // createdAt and updatedAt will be handled by timestamps option
   },
-  timeStamp
+  { timestamps: true } // Correct Mongoose option for createdAt and updatedAt
 );
 
-const ProductModel = mongoose.model("Product", producSchema);
+// Index for text search if you plan to use $text operator (more advanced search)
+// productSchema.index({ name: 'text', description: 'text' });
+
+const ProductModel = mongoose.model("Product", productSchema);
 export default ProductModel;

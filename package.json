@@ -1,19 +1,18 @@
 {
   "type": "module",
-  "name": "not_decided",
+  "name": "storefleet",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Backend for the StoreFleet e-commerce application.",
+  "main": "backend/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node backend/server.js",
     "dev": "nodemon backend/server.js"
   },
-  "author": "",
+  "author": "Khushang Sharma",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "body-parser": "^1.20.2",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
@@ -21,5 +20,8 @@
     "mongoose": "^7.6.3",
     "nodemailer": "^6.9.7",
     "validator": "^13.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
   }
 }
