@@ -1,61 +1,87 @@
 // backend/utils/emails/passwordReset.js
 import nodemailer from 'nodemailer';
-import path from 'path'; // For robust path handling
+import path from 'path';
+import dotenv from "dotenv"; // Import dotenv here
+import { fileURLToPath } from 'url'; // For __dirname if needed for path construction
 
-// Environment variables from .env
-const mailService = process.env.SMTP_SERVICE;
-const mailUser = process.env.MAIL_USER; // sharmakhushang05@gmail.com
-const mailPass = process.env.MAIL_PASS; // YOUR_GMAIL_APP_PASSWORD_HERE
+// --- DOTENV CONFIGURATION - Specific to this module ---
+// Determine the path to uat.env relative to this file's location
+const __filename_emailUtil_pw = fileURLToPath(import.meta.url);
+const __dirname_emailUtil_pw = path.dirname(__filename_emailUtil_pw);
+// Path from backend/utils/emails/ to backend/config/uat.env
+const configPath_emailUtil_pw = path.resolve(__dirname_emailUtil_pw, '..', '..', 'config', 'uat.env');
 
+// console.log('[passwordReset.js] Attempting to load .env from specific path:', configPath_emailUtil_pw);
+const loadEnvResult_emailUtil_pw = dotenv.config({ path: configPath_emailUtil_pw });
+
+if (loadEnvResult_emailUtil_pw.error) {
+  console.error('[passwordReset.js] FATAL ERROR loading .env file specifically for this module:', loadEnvResult_emailUtil_pw.error);
+} else {
+  // console.log('[passwordReset.js] Successfully loaded .env file specifically for this module.');
+  // console.log('[passwordReset.js] process.env.MAIL_USER after local dotenv:', process.env.MAIL_USER); // Debug
+}
+// --- END DOTENV CONFIGURATION for this module ---
+
+// Read environment variables for email configuration
+const smtpService = process.env.SMTP_SERVICE;
 const mailHost = process.env.MAIL_HOST;
 const mailPort = parseInt(process.env.MAIL_PORT || '587', 10);
 const mailSecure = process.env.MAIL_SECURE === 'true';
+const mailUser = process.env.MAIL_USER;
+const mailPass = process.env.MAIL_PASS;
 
-const mailFromAddress = process.env.MAIL_FROM_ADDRESS; // "StoreFleet Team <sharmakhushang05@gmail.com>"
+// For email content
+const mailFromAddress = process.env.MAIL_FROM_ADDRESS;
 const companyName = process.env.COMPANY_NAME || 'StoreFleet';
 
-// YOUR PROVIDED LOCAL LOGO PATH
+// Local logo path
 const localLogoPath = "C:\\Users\\sharm\\Downloads\\Logo.png";
 
 let transporter;
+let emailConfigured = false;
 
-if ((mailService && mailUser && mailPass) || (mailHost && mailUser && mailPass)) {
-    const transportOptions = mailHost
-        ? {
+// Configuration logic for Nodemailer transporter
+if (mailUser && mailPass) {
+    if (smtpService) {
+        emailConfigured = true;
+        transporter = nodemailer.createTransport({
+            service: smtpService,
+            auth: { user: mailUser, pass: mailPass },
+        });
+    } else if (mailHost) {
+        emailConfigured = true;
+        transporter = nodemailer.createTransport({
             host: mailHost,
             port: mailPort,
             secure: mailSecure,
             auth: { user: mailUser, pass: mailPass },
-          }
-        : {
-            service: mailService,
-            auth: { user: mailUser, pass: mailPass },
-          };
-    transporter = nodemailer.createTransport(transportOptions);
+        });
+    }
+}
 
+if (emailConfigured) {
     transporter.verify((error) => {
         if (error) {
-            console.error('Nodemailer (Password Reset) verification error:', error);
+            console.error('Nodemailer (Password Reset) VERIFICATION ERROR:', error);
         } else {
-            console.log('Nodemailer (Password Reset) is ready to send emails.');
+            console.log('Nodemailer (Password Reset) transporter is configured and verified.');
         }
     });
 } else {
     console.warn(
-        'Email (Password Reset) sending is NOT fully configured. ' +
-        'Please check email-related environment variables.'
+        'Email (Password Reset) sending is NOT fully configured. Please ensure MAIL_USER, MAIL_PASS, and either SMTP_SERVICE or MAIL_HOST are correctly set in your .env file AND that dotenv loaded them for this module.'
     );
     transporter = {
         sendMail: async (options) => {
-            console.warn(`Email (Password Reset) not sent to ${options.to}. Service not configured.`);
-            return { messageId: 'dummy-id-email-not-configured' };
+            console.warn(`[DUMMY SEND] Password Reset Email not truly sent to ${options.to}. Email service not configured.`);
+            return Promise.resolve({ messageId: 'dummy-id-email-not-configured' });
         }
     };
 }
 
 /**
  * Sends a password reset email.
- * The 'plainResetToken' parameter will be the raw token, not a full URL.
+ * The 'plainResetToken' parameter will be the raw token.
  * @param {object} user - The user object (needs user.email, user.name).
  * @param {string} plainResetToken - The plain text password reset token.
  */
@@ -68,10 +94,6 @@ export const sendPasswordResetEmail = async (user, plainResetToken) => {
         console.error("sendPasswordResetEmail: plainResetToken is required.");
         return;
     }
-
-    // For testing purposes, the API endpoint would be something like: PUT /api/storefleet/user/password/reset/:token
-    // The user (developer/tester) would take the plainResetToken from this email
-    // and use it in the :token part of the URL in Postman.
 
     const mailOptions = {
         from: mailFromAddress,
@@ -136,10 +158,16 @@ export const sendPasswordResetEmail = async (user, plainResetToken) => {
         }]
     };
 
+    if (!emailConfigured) {
+        // Dummy transporter will log.
+    }
+
     try {
         const info = await transporter.sendMail(mailOptions);
-        console.log(`Password reset email sent to ${user.email} with token. Message ID: ${info.messageId}`);
+        if (emailConfigured && info && info.messageId !== 'dummy-id-email-not-configured') {
+            console.log(`Password reset email sent to ${user.email} with token. Message ID: ${info.messageId}`);
+        }
     } catch (error) {
-        console.error(`Error sending password reset email to ${user.email}:`, error);
+        console.error(`Error sending password reset email to ${user.email}: (This error is from transporter.sendMail)`, error);
     }
 };

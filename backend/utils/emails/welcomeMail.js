@@ -1,57 +1,64 @@
 // backend/utils/emails/welcomeMail.js
 import nodemailer from 'nodemailer';
-import path from 'path'; // For local logo path
+import path from 'path';
+import dotenv from "dotenv"; // Import dotenv here
+import { fileURLToPath } from 'url'; // For __dirname if needed for path construction
+
+// --- DOTENV CONFIGURATION - Specific to this module ---
+// Determine the path to uat.env relative to this file's location
+const __filename_emailUtil = fileURLToPath(import.meta.url);
+const __dirname_emailUtil = path.dirname(__filename_emailUtil);
+// Path from backend/utils/emails/ to backend/config/uat.env
+const configPath_emailUtil = path.resolve(__dirname_emailUtil, '..', '..', 'config', 'uat.env');
+
+// console.log('[welcomeMail.js] Attempting to load .env from specific path:', configPath_emailUtil);
+const loadEnvResult_emailUtil = dotenv.config({ path: configPath_emailUtil });
+
+if (loadEnvResult_emailUtil.error) {
+  console.error('[welcomeMail.js] FATAL ERROR loading .env file specifically for this module:', loadEnvResult_emailUtil.error);
+} else {
+  // console.log('[welcomeMail.js] Successfully loaded .env file specifically for this module.');
+  // console.log('[welcomeMail.js] process.env.MAIL_USER after local dotenv:', process.env.MAIL_USER); // Debug
+}
+// --- END DOTENV CONFIGURATION for this module ---
+
 
 // Read environment variables for email configuration
-// These variable names MUST EXACTLY match what's in your .env file
-// and what's shown in your "Loaded environment variables" log.
+// These should now be populated correctly by the dotenv call above
 const smtpService = process.env.SMTP_SERVICE;
 const mailHost = process.env.MAIL_HOST;
 const mailPort = parseInt(process.env.MAIL_PORT || '587', 10);
-const mailSecure = process.env.MAIL_SECURE === 'true'; // From .env: 'true' or 'false'
-const mailUser = process.env.MAIL_USER;               // Your email from .env
-const mailPass = process.env.MAIL_PASS;               // Your app password from .env
+const mailSecure = process.env.MAIL_SECURE === 'true';
+const mailUser = process.env.MAIL_USER;
+const mailPass = process.env.MAIL_PASS;
 
 // For email content
 const mailFromAddress = process.env.MAIL_FROM_ADDRESS;
 const companyName = process.env.COMPANY_NAME || 'StoreFleet';
 
-// YOUR PROVIDED LOCAL LOGO PATH
+// Local logo path
 const localLogoPath = "C:\\Users\\sharm\\Downloads\\Logo.png";
 
 let transporter;
 let emailConfigured = false;
 
-// Debugging: Log the values read from process.env right before the check
-// console.log('[welcomeMail.js] Values for config check:', {
-//   env_SMTP_SERVICE: process.env.SMTP_SERVICE,
-//   env_MAIL_HOST: process.env.MAIL_HOST,
-//   env_MAIL_USER: process.env.MAIL_USER,
-//   env_MAIL_PASS_is_set: !!process.env.MAIL_PASS, // Just check if it's set, don't log the password
-//   check_mailUser: mailUser,
-//   check_mailPass_is_set: !!mailPass,
-//   check_smtpService: smtpService,
-//   check_mailHost: mailHost
-// });
-
 // Configuration logic for Nodemailer transporter
-if (mailUser && mailPass) { // Both user and pass must be present
-    if (smtpService) { // Prioritize service-based configuration
+// This logic now uses the constants defined above, which *should* be populated by the local dotenv call
+if (mailUser && mailPass) {
+    if (smtpService) {
         emailConfigured = true;
         transporter = nodemailer.createTransport({
             service: smtpService,
             auth: { user: mailUser, pass: mailPass },
         });
-        // console.log('[welcomeMail.js] Configured using SMTP_SERVICE.');
-    } else if (mailHost) { // Fallback to host-based configuration
+    } else if (mailHost) {
         emailConfigured = true;
         transporter = nodemailer.createTransport({
             host: mailHost,
             port: mailPort,
-            secure: mailSecure, // `secure: true` for port 465, `secure: false` for port 587 (uses STARTTLS)
+            secure: mailSecure,
             auth: { user: mailUser, pass: mailPass },
         });
-        // console.log('[welcomeMail.js] Configured using MAIL_HOST.');
     }
 }
 
@@ -59,14 +66,13 @@ if (emailConfigured) {
     transporter.verify((error) => {
         if (error) {
             console.error('Nodemailer (Welcome Email) VERIFICATION ERROR:', error);
-            console.error('This usually means: \n1. Incorrect MAIL_USER or MAIL_PASS (App Password for Gmail).\n2. Gmail "Less Secure App Access" issue (though App Passwords bypass this).\n3. Incorrect MAIL_HOST, MAIL_PORT, or MAIL_SECURE settings for your provider.\n4. Firewall or network issue preventing connection to the mail server.');
         } else {
             console.log('Nodemailer (Welcome Email) transporter is configured and verified.');
         }
     });
 } else {
     console.warn(
-        'Email (Welcome Email) sending is NOT fully configured. Please ensure MAIL_USER, MAIL_PASS, and either SMTP_SERVICE or MAIL_HOST are correctly set in your .env file.'
+        'Email (Welcome Email) sending is NOT fully configured. Please ensure MAIL_USER, MAIL_PASS, and either SMTP_SERVICE or MAIL_HOST are correctly set in your .env file AND that dotenv loaded them for this module.'
     );
     transporter = {
         sendMail: async (options) => {
@@ -76,19 +82,25 @@ if (emailConfigured) {
     };
 }
 
+// ... (rest of the sendWelcomeEmail function remains the same as the last version I provided)
 export const sendWelcomeEmail = async (user) => {
     if (!user || !user.email || !user.name) {
         console.error("sendWelcomeEmail: user object with email and name is required.");
         return;
     }
 
+    // Use the constants defined at the top of the module (which should now be correctly populated)
+    // Or, for absolute safety due to timing, read them directly again if issues persist, but top-level should be fine now.
+    // const currentMailFromAddress = process.env.MAIL_FROM_ADDRESS; // Example of direct read
+    // const currentCompanyName = process.env.COMPANY_NAME || 'StoreFleet';
+
     const userName = user.name;
     const userEmail = user.email;
 
     const mailOptions = {
-        from: mailFromAddress,
+        from: mailFromAddress, // Uses the const defined at the top
         to: userEmail,
-        subject: `🎉 Welcome to ${companyName}, ${userName}!`,
+        subject: `🎉 Welcome to ${companyName}, ${userName}!`, // Uses const
         html: `
             <!DOCTYPE html>
             <html lang="en">
@@ -142,7 +154,7 @@ export const sendWelcomeEmail = async (user) => {
     };
 
     if (!emailConfigured) {
-        // The dummy transporter handles logging the "dummy send" message.
+        // The dummy transporter handles logging.
     }
 
     try {
