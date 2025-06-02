@@ -2,37 +2,37 @@ import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema({
     user: {
-        type: mongoose.Schema.Types.ObjectId, // Corrected: Use ObjectId
-        ref: 'User', // Added ref to User model
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User', 
         required: true,
     },
-    name: { // Name of the reviewer (denormalized from User)
+    name: { 
         type: String,
         required: true,
     },
     rating: {
         type: Number,
         required: true,
-        min: 1, // Optional: Add min/max for review rating
-        max: 5, // Optional: Add min/max for review rating
+        min: 1,   
+        max: 5,   
     },
     comment: {
         type: String,
         trim: true,
     },
-    createdAt: { // Timestamp for the review itself
+    createdAt: { 
         type: Date,
         default: Date.now,
     }
 });
 
-const productSchema = new mongoose.Schema( // Corrected typo: productSchema
+const productSchema = new mongoose.Schema( 
   {
     name: {
       type: String,
       required: [true, "Product name is required."],
       trim: true,
-      index: true, // Add index for searching by name
+      index: true, 
     },
     description: {
       type: String,
@@ -45,10 +45,9 @@ const productSchema = new mongoose.Schema( // Corrected typo: productSchema
     price: {
       type: Number,
       required: [true, "Product price is required."],
-      min: [0, "Price cannot be negative."], // Use min/max for Numbers
-      // Consider if maxLength was intended for display purposes, not validation of numeric value
+      min: [0, "Price cannot be negative."], 
     },
-    rating: { // Overall product rating
+    rating: { 
       type: Number,
       default: 0,
       min: 0,
@@ -56,7 +55,7 @@ const productSchema = new mongoose.Schema( // Corrected typo: productSchema
     },
     images: [
       {
-        public_id: { // ID from image hosting service like Cloudinary
+        public_id: { 
           type: String,
           required: true,
         },
@@ -69,7 +68,7 @@ const productSchema = new mongoose.Schema( // Corrected typo: productSchema
     category: {
       type: String,
       required: [true, "Product category is required."],
-      enum: { // Enum with message for better error feedback
+      enum: { 
         values: [
             "Mobile", "Electronics", "Clothing", "Home & Garden", "Automotive",
             "Health & Beauty", "Sports & Outdoors", "Toys & Games", "Books & Media",
@@ -79,31 +78,30 @@ const productSchema = new mongoose.Schema( // Corrected typo: productSchema
         ],
         message: '{VALUE} is not a supported category.'
       },
-      index: true, // Add index for filtering by category
+      index: true, 
     },
     stock: {
       type: Number,
       required: [true, "Product stock is mandatory."],
-      min: [0, "Stock cannot be negative."], // Use min for Numbers
+      min: [0, "Stock cannot be negative."], 
       default: 1,
     },
-    numberOfReviews: { // Keep track of the number of reviews
+    numberOfReviews: { 
         type: Number,
         default: 0,
     },
-    reviews: [reviewSchema], // Embed the reviewSchema
+    reviews: [reviewSchema], 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    // createdAt and updatedAt will be handled by timestamps option
+    
   },
-  { timestamps: true } // Correct Mongoose option for createdAt and updatedAt
+  { timestamps: true } 
 );
 
-// Index for text search if you plan to use $text operator (more advanced search)
-// productSchema.index({ name: 'text', description: 'text' });
+
 
 const ProductModel = mongoose.model("Product", productSchema);
 export default ProductModel;

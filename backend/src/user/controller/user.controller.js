@@ -1,4 +1,4 @@
-// backend/src/user/controller/user.controller.js
+
 import { sendPasswordResetEmail } from "../../../utils/emails/passwordReset.js";
 import { sendWelcomeEmail } from "../../../utils/emails/welcomeMail.js";
 import { ErrorHandler } from "../../../utils/errorHandler.js";
@@ -13,7 +13,7 @@ import {
   updateUserProfileRepo,
   updateUserRoleAndProfileRepo,
 } from "../models/user.repository.js";
-import UserModel from "../models/user.schema.js"; // UserModel is needed for user.getResetPasswordToken()
+import UserModel from "../models/user.schema.js"; 
 import crypto from "crypto";
 
 export const createNewUser = async (req, res, next) => {
@@ -22,25 +22,25 @@ export const createNewUser = async (req, res, next) => {
     if (!name || !email || !password) {
         return next(new ErrorHandler(400, "Name, email, and password are required."));
     }
-    // Password will be hashed by the pre-save hook in user.schema.js
+    
     const newUser = await createNewUserRepo({ name, email, password });
 
-    // Requirement 1: Send welcome email
+    
     try {
-      await sendWelcomeEmail(newUser); // Pass the user object
+      await sendWelcomeEmail(newUser); 
     } catch (emailError) {
       console.error("Failed to send welcome email:", emailError);
-      // Do not block registration if email fails, just log it.
+      
     }
 
-    await sendToken(newUser, res, 201); // 201 for resource creation
+    await sendToken(newUser, res, 201); 
 
   } catch (err) {
-    // Requirement 2: Handle MongoDB duplicate key error (E11000) for email
+   
     if (err.code === 11000 && err.keyPattern && err.keyPattern.email) {
       return next(new ErrorHandler(400, "Email already exists. Please try a different email."));
     }
-    if (err.name === 'ValidationError') { // Mongoose validation errors
+    if (err.name === 'ValidationError') { 
         return next(new ErrorHandler(400, err.message));
     }
     console.error("Error in createNewUser:", err);
@@ -55,10 +55,10 @@ export const userLogin = async (req, res, next) => {
       return next(new ErrorHandler(400, "Please enter both email and password."));
     }
 
-    const user = await findUserRepo({ email: email.toLowerCase() }, true); // Find by lowercase email, select password
+    const user = await findUserRepo({ email: email.toLowerCase() }, true); 
     if (!user) {
       return next(
-        new ErrorHandler(401, "Invalid email or password.") // More generic message for security
+        new ErrorHandler(401, "Invalid email or password.") 
       );
     }
 
@@ -79,13 +79,13 @@ export const logoutUser = async (req, res, next) => {
     .cookie("token", null, {
       expires: new Date(Date.now()),
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Match sendToken options
-      sameSite: "strict", // Match sendToken options
+      secure: process.env.NODE_ENV === "production", 
+      sameSite: "strict", 
     })
     .json({ success: true, message: "Logout successful." });
 };
 
-// Requirement 4: Forget Password (Modified to send only token)
+
 export const forgetPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -93,10 +93,10 @@ export const forgetPassword = async (req, res, next) => {
       return next(new ErrorHandler(400, "Please provide your email address."));
     }
 
-    // Use UserModel to get a Mongoose document instance for instance methods
+    
     const user = await UserModel.findOne({ email: email.toLowerCase() });
     if (!user) {
-      // To prevent email enumeration, send a generic success message.
+      
       console.log(`Forget password attempt for non-existent email: ${email}`);
       return res.status(200).json({
         success: true,
@@ -104,11 +104,11 @@ export const forgetPassword = async (req, res, next) => {
       });
     }
 
-    const resetToken = user.getResetPasswordToken(); // This method sets token fields on 'user' instance
-    await user.save({ validateBeforeSave: false }); // Save user with new reset token and expiry
+    const resetToken = user.getResetPasswordToken(); 
+    await user.save({ validateBeforeSave: false }); 
 
     try {
-      // Pass only the plain resetToken to the email function
+      
       await sendPasswordResetEmail(user, resetToken);
       res.status(200).json({
         success: true,
@@ -116,7 +116,7 @@ export const forgetPassword = async (req, res, next) => {
       });
     } catch (emailError) {
       console.error("Failed to send password reset email:", emailError);
-      // Clear token fields if email sending fails to prevent misuse of the generated token
+      
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
@@ -129,10 +129,10 @@ export const forgetPassword = async (req, res, next) => {
   }
 };
 
-// Requirement 4: Reset Password
+
 export const resetUserPassword = async (req, res, next) => {
   try {
-    const { token } = req.params; // This is the plain token from the API call
+    const { token } = req.params; 
     const { newPassword, confirmPassword } = req.body;
 
     if (!newPassword || !confirmPassword) {
@@ -141,7 +141,7 @@ export const resetUserPassword = async (req, res, next) => {
     if (newPassword !== confirmPassword) {
       return next(new ErrorHandler(400, "Passwords do not match."));
     }
-    if (newPassword.length < 6) { // Consistent with schema minLength
+    if (newPassword.length < 6) { 
         return next(new ErrorHandler(400, "Password must be at least 6 characters long."));
     }
 
@@ -158,13 +158,13 @@ export const resetUserPassword = async (req, res, next) => {
       );
     }
 
-    user.password = newPassword; // The pre-save hook in schema will hash this
+    user.password = newPassword; 
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 
-    await user.save(); // Triggers pre-save hook for password hashing
+    await user.save(); 
 
-    await sendToken(user, res, 200); // Log the user in
+    await sendToken(user, res, 200); 
 
   } catch (error) {
     console.error("Error in resetUserPassword:", error);
@@ -200,7 +200,7 @@ export const updatePassword = async (req, res, next) => {
         return next(new ErrorHandler(400, "New password must be at least 6 characters long."));
     }
 
-    const user = await findUserByIdRepo(req.user._id, true); // Select current password
+    const user = await findUserByIdRepo(req.user._id, true); 
     if (!user) return next(new ErrorHandler(404, "User not found."));
 
     const passwordMatch = await user.comparePassword(currentPassword);
@@ -208,7 +208,7 @@ export const updatePassword = async (req, res, next) => {
       return next(new ErrorHandler(401, "Incorrect current password."));
     }
 
-    user.password = newPassword; // Pre-save hook will hash
+    user.password = newPassword; 
     await user.save();
 
     await sendToken(user, res, 200);
@@ -223,7 +223,7 @@ export const updateUserProfile = async (req, res, next) => {
   const dataToUpdate = {};
 
   if (name) dataToUpdate.name = name;
-  // if (req.body.profileImg) dataToUpdate.profileImg = req.body.profileImg; // Add if handling profile image uploads
+  
 
   if (Object.keys(dataToUpdate).length === 0) {
     return next(new ErrorHandler(400, "No data provided for update."));
@@ -244,7 +244,7 @@ export const updateUserProfile = async (req, res, next) => {
   }
 };
 
-// --- Admin Controllers ---
+
 
 export const getAllUsers = async (req, res, next) => {
   try {
@@ -273,7 +273,7 @@ export const getUserDetailsForAdmin = async (req, res, next) => {
   }
 };
 
-// Requirement 6: Admin Role Management
+
 export const updateUserProfileAndRole = async (req, res, next) => {
   try {
     const userIdToUpdate = req.params.id;

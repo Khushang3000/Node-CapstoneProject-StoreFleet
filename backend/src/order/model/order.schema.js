@@ -55,21 +55,21 @@ const orderSchema = new mongoose.Schema({
     required: true,
   },
   paymentInfo: {
-    id: { // This would typically be a transaction ID from a payment gateway
+    id: { 
       type: String,
       required: true,
     },
-    status: { // This should ideally represent the payment status, e.g., "succeeded", "pending", "failed"
-      type: Boolean, // Boolean might be too simplistic; consider String. 'true' could mean paid.
+    status: { 
+      type: Boolean, 
       default: false,
       required: true,
     },
   },
-  paidAt: { // The timestamp when the payment was made
+  paidAt: { 
     type: Date,
     required: true,
   },
-  itemsPrice: { // Total price of items before tax and shipping
+  itemsPrice: { 
     type: Number,
     default: 0,
     required: true,
@@ -84,7 +84,7 @@ const orderSchema = new mongoose.Schema({
     default: 0,
     required: true,
   },
-  totalPrice: { // Grand total (itemsPrice + taxPrice + shippingPrice)
+  totalPrice: { 
     type: Number,
     default: 0,
     required: true,
@@ -92,8 +92,8 @@ const orderSchema = new mongoose.Schema({
   orderStatus: {
     type: String,
     required: true,
-    default: "Processing", // Initial status
-    enum: ["Processing", "Shipped", "Delivered", "Cancelled", "Payment Pending"], // Example statuses
+    default: "Processing", 
+    enum: ["Processing", "Shipped", "Delivered", "Cancelled", "Payment Pending"], 
   },
   deliveredAt: Date,
   createdAt: {

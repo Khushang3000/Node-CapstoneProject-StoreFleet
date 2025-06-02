@@ -1,30 +1,22 @@
-// backend/utils/emails/welcomeMail.js
+
 import nodemailer from 'nodemailer';
 import path from 'path';
-import dotenv from "dotenv"; // Import dotenv here
-import { fileURLToPath } from 'url'; // For __dirname if needed for path construction
-
-// --- DOTENV CONFIGURATION - Specific to this module ---
-// Determine the path to uat.env relative to this file's location
+import dotenv from "dotenv"; 
+import { fileURLToPath } from 'url'; 
 const __filename_emailUtil = fileURLToPath(import.meta.url);
 const __dirname_emailUtil = path.dirname(__filename_emailUtil);
-// Path from backend/utils/emails/ to backend/config/uat.env
+
 const configPath_emailUtil = path.resolve(__dirname_emailUtil, '..', '..', 'config', 'uat.env');
 
-// console.log('[welcomeMail.js] Attempting to load .env from specific path:', configPath_emailUtil);
+
 const loadEnvResult_emailUtil = dotenv.config({ path: configPath_emailUtil });
 
 if (loadEnvResult_emailUtil.error) {
   console.error('[welcomeMail.js] FATAL ERROR loading .env file specifically for this module:', loadEnvResult_emailUtil.error);
 } else {
-  // console.log('[welcomeMail.js] Successfully loaded .env file specifically for this module.');
-  // console.log('[welcomeMail.js] process.env.MAIL_USER after local dotenv:', process.env.MAIL_USER); // Debug
+  
 }
-// --- END DOTENV CONFIGURATION for this module ---
 
-
-// Read environment variables for email configuration
-// These should now be populated correctly by the dotenv call above
 const smtpService = process.env.SMTP_SERVICE;
 const mailHost = process.env.MAIL_HOST;
 const mailPort = parseInt(process.env.MAIL_PORT || '587', 10);
@@ -32,18 +24,17 @@ const mailSecure = process.env.MAIL_SECURE === 'true';
 const mailUser = process.env.MAIL_USER;
 const mailPass = process.env.MAIL_PASS;
 
-// For email content
+
 const mailFromAddress = process.env.MAIL_FROM_ADDRESS;
 const companyName = process.env.COMPANY_NAME || 'StoreFleet';
 
-// Local logo path
+
 const localLogoPath = "C:\\Users\\sharm\\Downloads\\Logo.png";
 
 let transporter;
 let emailConfigured = false;
 
-// Configuration logic for Nodemailer transporter
-// This logic now uses the constants defined above, which *should* be populated by the local dotenv call
+
 if (mailUser && mailPass) {
     if (smtpService) {
         emailConfigured = true;
@@ -82,25 +73,22 @@ if (emailConfigured) {
     };
 }
 
-// ... (rest of the sendWelcomeEmail function remains the same as the last version I provided)
+
 export const sendWelcomeEmail = async (user) => {
     if (!user || !user.email || !user.name) {
         console.error("sendWelcomeEmail: user object with email and name is required.");
         return;
     }
 
-    // Use the constants defined at the top of the module (which should now be correctly populated)
-    // Or, for absolute safety due to timing, read them directly again if issues persist, but top-level should be fine now.
-    // const currentMailFromAddress = process.env.MAIL_FROM_ADDRESS; // Example of direct read
-    // const currentCompanyName = process.env.COMPANY_NAME || 'StoreFleet';
+    
 
     const userName = user.name;
     const userEmail = user.email;
 
     const mailOptions = {
-        from: mailFromAddress, // Uses the const defined at the top
+        from: mailFromAddress, 
         to: userEmail,
-        subject: `🎉 Welcome to ${companyName}, ${userName}!`, // Uses const
+        subject: `🎉 Welcome to ${companyName}, ${userName}!`, 
         html: `
             <!DOCTYPE html>
             <html lang="en">
@@ -154,7 +142,7 @@ export const sendWelcomeEmail = async (user) => {
     };
 
     if (!emailConfigured) {
-        // The dummy transporter handles logging.
+        
     }
 
     try {

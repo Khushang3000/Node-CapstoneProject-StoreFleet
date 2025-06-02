@@ -48,22 +48,21 @@ export const createNewOrder = async (req, res, next) => {
       taxPrice: Number(taxPrice),
       shippingPrice: Number(shippingPrice),
       totalPrice: Number(totalPrice),
-      orderStatus: "Processing", // Default status for a new order as per schema
-      // createdAt will be set by default in the schema (if using {timestamps: true} or default: Date.now())
+      orderStatus: "Processing", 
     };
 
     const newOrder = await createNewOrderRepo(orderData);
 
-    res.status(201).json({ // 201 Created status for successful resource creation
+    res.status(201).json({ 
       success: true,
       message: "Order placed successfully!",
       order: newOrder,
     });
 
   } catch (error) {
-    // Handle errors, including Mongoose validation errors thrown by the repository
+    
     if (error.name === 'ValidationError') {
-        // Construct a more readable error message from Mongoose validation errors
+       
         const messages = Object.values(error.errors).map(val => val.message);
         const errorMessage = `Validation Error: ${messages.join('. ')}`;
         return next(new ErrorHandler(400, errorMessage));

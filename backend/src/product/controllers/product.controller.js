@@ -1,4 +1,4 @@
-// backend/src/product/controllers/product.controller.js
+
 import { ErrorHandler } from "../../../utils/errorHandler.js";
 import {
   addNewProductRepo,
@@ -9,20 +9,18 @@ import {
   getTotalCountsOfProduct,
   updateProductRepo,
 } from "../model/product.repository.js";
-// ProductModel import is generally not needed here if all DB ops are in the repository.
+
 
 export const addNewProduct = async (req, res, next) => {
   try {
-    // Assuming req.body.images is an array of objects like [{ public_id: "...", url: "..." }]
-    // Image upload logic to a service like Cloudinary would typically occur before this,
-    // and req.body.images would be populated with the results.
+    
     if (!req.body.name || !req.body.description || !req.body.price || !req.body.category || !req.body.stock || !req.body.images || !req.body.images.length) {
         return next(new ErrorHandler(400, "Missing required product fields: name, description, price, category, stock, and at least one image are required."));
     }
 
     const productData = {
       ...req.body,
-      createdBy: req.user._id, // Populated by 'auth' middleware
+      createdBy: req.user._id, 
     };
 
     const product = await addNewProductRepo(productData);
@@ -36,35 +34,35 @@ export const addNewProduct = async (req, res, next) => {
   }
 };
 
-// Requirement 7: Product Filtering & Pagination
+
 export const getAllProducts = async (req, res, next) => {
   try {
     const {
-      keyword, // For searching by product name
+      keyword,
       category,
       page,
       limit,
       "price[gte]": priceGte,
       "price[lte]": priceLte,
       "rating[gte]": ratingGte,
-      sortBy, // Field to sort by e.g., 'price', 'rating', 'createdAt'
-      order = 'asc', // Sort order: 'asc' or 'desc'
+      sortBy, 
+      order = 'asc', 
     } = req.query;
 
-    const filters = {}; // For exact matches or range queries
-    const searchFilter = {}; // Specifically for text search like $regex
+    const filters = {}; 
+    const searchFilter = {}; 
 
-    // 1. Search by keyword in product name (case-insensitive)
+    
     if (keyword) {
       searchFilter.name = { $regex: keyword, $options: "i" };
     }
 
-    // 2. Filter by category
+    
     if (category) {
       filters.category = category;
     }
 
-    // 3. Filter by price range
+    
     if (priceGte || priceLte) {
       filters.price = {};
       if (priceGte) {
@@ -77,24 +75,24 @@ export const getAllProducts = async (req, res, next) => {
       }
     }
 
-    // 4. Filter by rating
+  
     if (ratingGte) {
         const gte = parseFloat(ratingGte);
         if (!isNaN(gte)) filters.rating = { $gte: gte };
     }
 
-    // 5. Pagination
+   
     const pageNum = parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
     const itemsPerPage = parseInt(limit, 10) > 0 ? parseInt(limit, 10) : 10;
     const skip = (pageNum - 1) * itemsPerPage;
     const paginationOptions = { skip, limit: itemsPerPage };
 
-    // 6. Sorting
+    
     const sortOptions = {};
     if (sortBy && ['name', 'price', 'rating', 'createdAt', 'updatedAt'].includes(sortBy)) {
         sortOptions[sortBy] = order === 'desc' ? -1 : 1;
     } else {
-        sortOptions.createdAt = -1; // Default sort by newest
+        sortOptions.createdAt = -1; 
     }
 
     const products = await getAllProductsRepo({
@@ -130,8 +128,7 @@ export const getAllProducts = async (req, res, next) => {
 export const updateProduct = async (req, res, next) => {
   try {
     const productId = req.params.id;
-    // Image update logic would be more complex, involving deleting old & uploading new images.
-    // For now, assuming req.body might contain updated image URLs if any.
+    
     if (Object.keys(req.body).length === 0) {
         return next(new ErrorHandler(400, "No data provided for update."));
     }
@@ -156,8 +153,7 @@ export const updateProduct = async (req, res, next) => {
 export const deleteProduct = async (req, res, next) => {
   try {
     const productId = req.params.id;
-    // Add logic here to delete associated product images from cloud storage (e.g., Cloudinary)
-    // based on the public_ids stored in deletedProduct.images.
+    
 
     const deletedProduct = await deleProductRepo(productId);
     if (!deletedProduct) {
@@ -190,7 +186,7 @@ export const getProductDetails = async (req, res, next) => {
   }
 };
 
-// Requirement 8: Review Management (Partially addressed, ensuring numberOfReviews and rating are updated)
+
 export const rateProduct = async (req, res, next) => {
   try {
     const productId = req.params.id;
@@ -202,7 +198,7 @@ export const rateProduct = async (req, res, next) => {
       return next(new ErrorHandler(400, "Rating value is required."));
     }
     const numericRating = Number(rating);
-    if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) { // Assuming 1-5 rating scale
+    if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) { 
         return next(new ErrorHandler(400, "Rating must be a number between 1 and 5."));
     }
 
@@ -216,7 +212,7 @@ export const rateProduct = async (req, res, next) => {
       name: userName,
       rating: numericRating,
       comment: comment || "",
-      createdAt: new Date(), // Add timestamp to review
+      createdAt: new Date(), 
     };
 
     const existingReviewIndex = product.reviews.findIndex(
@@ -224,12 +220,12 @@ export const rateProduct = async (req, res, next) => {
     );
 
     if (existingReviewIndex >= 0) {
-      product.reviews[existingReviewIndex] = review; // Update existing review
+      product.reviews[existingReviewIndex] = review; 
     } else {
-      product.reviews.push(review); // Add new review
+      product.reviews.push(review); 
     }
 
-    // Recalculate average rating and number of reviews
+    
     if (product.reviews.length > 0) {
       product.rating =
         product.reviews.reduce((acc, item) => item.rating + acc, 0) /
@@ -237,14 +233,14 @@ export const rateProduct = async (req, res, next) => {
     } else {
       product.rating = 0;
     }
-    product.numberOfReviews = product.reviews.length; // Update based on product.schema.js change
+    product.numberOfReviews = product.reviews.length; 
 
-    await product.save({ validateBeforeSave: true }); // Enable validation
+    await product.save({ validateBeforeSave: true }); 
 
-    res.status(200).json({ // 200 OK for update or creation of sub-resource
+    res.status(200).json({ 
         success: true,
         message: "Review submitted successfully.",
-        product // Send back the updated product
+        product 
     });
   } catch (error) {
     if (error.name === 'ValidationError') {
@@ -274,10 +270,10 @@ export const getAllReviewsOfAProduct = async (req, res, next) => {
   }
 };
 
-// Requirement 8: Review Management Fix
+
 export const deleteReview = async (req, res, next) => {
   try {
-    const { productId, reviewId } = req.query; // Get reviewId from query params
+    const { productId, reviewId } = req.query; 
 
     if (!productId || !reviewId) {
       return next(
@@ -303,41 +299,39 @@ export const deleteReview = async (req, res, next) => {
 
     const reviewToDelete = product.reviews[reviewIndex];
 
-    // Requirement 8: Restrict review deletion to review owner ONLY
+    
     if (reviewToDelete.user.toString() !== req.user._id.toString()) {
-      // Allow admin to delete any review as well (common enhancement, but sticking to "owner only" for strictness)
-      // if (req.user.role !== 'admin' && reviewToDelete.user.toString() !== req.user._id.toString()) {
+      
       return next(
         new ErrorHandler(403, "Forbidden: You are not authorized to delete this review.")
       );
     }
 
-    // Remove the review
+    
     product.reviews.splice(reviewIndex, 1);
 
-    // Requirement 8: Update product ratings automatically when review is deleted
-    // Recalculate average rating and number of reviews
+    
     if (product.reviews.length > 0) {
       product.rating =
         product.reviews.reduce((acc, item) => item.rating + acc, 0) /
         product.reviews.length;
     } else {
-      product.rating = 0; // Reset rating if no reviews are left
+      product.rating = 0; 
     }
-    product.numberOfReviews = product.reviews.length; // Update number of reviews
+    product.numberOfReviews = product.reviews.length; 
 
-    await product.save({ validateBeforeSave: true }); // Enable validation
+    await product.save({ validateBeforeSave: true }); 
 
     res.status(200).json({
       success: true,
       message: "Review deleted successfully.",
-      product, // Send back the updated product
+      product, 
     });
   } catch (error) {
     if (error.name === 'ValidationError') {
       return next(new ErrorHandler(400, error.message));
     }
-    if (error.kind === 'ObjectId') { // Handles invalid productId or reviewId format if direct DB op was attempted
+    if (error.kind === 'ObjectId') { 
         return next(new ErrorHandler(400, "Invalid ID format for product or review."));
     }
     console.error("Error in deleteReview:", error);

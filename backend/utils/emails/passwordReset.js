@@ -1,28 +1,22 @@
-// backend/utils/emails/passwordReset.js
+
 import nodemailer from 'nodemailer';
 import path from 'path';
-import dotenv from "dotenv"; // Import dotenv here
-import { fileURLToPath } from 'url'; // For __dirname if needed for path construction
-
-// --- DOTENV CONFIGURATION - Specific to this module ---
-// Determine the path to uat.env relative to this file's location
+import dotenv from "dotenv"; 
+import { fileURLToPath } from 'url'; 
 const __filename_emailUtil_pw = fileURLToPath(import.meta.url);
 const __dirname_emailUtil_pw = path.dirname(__filename_emailUtil_pw);
-// Path from backend/utils/emails/ to backend/config/uat.env
+
 const configPath_emailUtil_pw = path.resolve(__dirname_emailUtil_pw, '..', '..', 'config', 'uat.env');
 
-// console.log('[passwordReset.js] Attempting to load .env from specific path:', configPath_emailUtil_pw);
+
 const loadEnvResult_emailUtil_pw = dotenv.config({ path: configPath_emailUtil_pw });
 
 if (loadEnvResult_emailUtil_pw.error) {
   console.error('[passwordReset.js] FATAL ERROR loading .env file specifically for this module:', loadEnvResult_emailUtil_pw.error);
 } else {
-  // console.log('[passwordReset.js] Successfully loaded .env file specifically for this module.');
-  // console.log('[passwordReset.js] process.env.MAIL_USER after local dotenv:', process.env.MAIL_USER); // Debug
+  
 }
-// --- END DOTENV CONFIGURATION for this module ---
 
-// Read environment variables for email configuration
 const smtpService = process.env.SMTP_SERVICE;
 const mailHost = process.env.MAIL_HOST;
 const mailPort = parseInt(process.env.MAIL_PORT || '587', 10);
@@ -30,17 +24,16 @@ const mailSecure = process.env.MAIL_SECURE === 'true';
 const mailUser = process.env.MAIL_USER;
 const mailPass = process.env.MAIL_PASS;
 
-// For email content
 const mailFromAddress = process.env.MAIL_FROM_ADDRESS;
 const companyName = process.env.COMPANY_NAME || 'StoreFleet';
 
-// Local logo path
+
 const localLogoPath = "C:\\Users\\sharm\\Downloads\\Logo.png";
 
 let transporter;
 let emailConfigured = false;
 
-// Configuration logic for Nodemailer transporter
+
 if (mailUser && mailPass) {
     if (smtpService) {
         emailConfigured = true;
@@ -79,12 +72,7 @@ if (emailConfigured) {
     };
 }
 
-/**
- * Sends a password reset email.
- * The 'plainResetToken' parameter will be the raw token.
- * @param {object} user - The user object (needs user.email, user.name).
- * @param {string} plainResetToken - The plain text password reset token.
- */
+
 export const sendPasswordResetEmail = async (user, plainResetToken) => {
     if (!user || !user.email || !user.name) {
         console.error("sendPasswordResetEmail: user object with email and name is required.");
@@ -159,7 +147,7 @@ export const sendPasswordResetEmail = async (user, plainResetToken) => {
     };
 
     if (!emailConfigured) {
-        // Dummy transporter will log.
+        
     }
 
     try {
